@@ -2,6 +2,93 @@ from conexion import obtener_conexion
 from codigo import Direccion, Categoria, Producto, Almacen, Inventario, Proveedor
 
 
+def consultar_datos_bd(conexion):
+    cursor = conexion.cursor()
+    while True:
+        print("\n" + "=" * 50)
+        print("      CONSULTAS DE LA BASE DE DATOS (MYSQL)")
+        print("=" * 50)
+        print("1. Ver todas las Direcciones")
+        print("2. Ver todas las Categorías")
+        print("3. Ver todos los Proveedores")
+        print("4. Ver todos los Productos")
+        print("5. Ver todos los Almacenes")
+        print("6. Ver Productos en Almacenes (Stock)")
+        print("7. Ver Proveedores por Producto")
+        print("8. Volver al Menú Principal")
+        print("=" * 50)
+
+        sub_op = input("Selecciona una opción de consulta (1-8): ")
+
+        if sub_op == "1":
+            cursor.execute("SELECT id_direccion, numero_lugar, calle, comuna, region FROM direccion")
+            filas = cursor.fetchall()
+            print("\n--- DIRECCIONES ---")
+            for f in filas:
+                print(f"ID: {f[0]} | Calle: {f[2]} #{f[1]}, {f[3]} ({f[4]})")
+
+        elif sub_op == "2":
+            cursor.execute("SELECT id_categoria, nombre, descripcion FROM categoria")
+            filas = cursor.fetchall()
+            print("\n--- CATEGORÍAS ---")
+            for f in filas:
+                print(f"ID: {f[0]} | Nombre: {f[1]} | Descripción: {f[2]}")
+
+        elif sub_op == "3":
+            cursor.execute("SELECT rut, nombre, correo, fk_id_direccion FROM proveedor")
+            filas = cursor.fetchall()
+            print("\n--- PROVEEDORES ---")
+            for f in filas:
+                print(f"RUT: {f[0]} | Nombre: {f[1]} | Correo: {f[2]} | ID Dirección: {f[3]}")
+
+        elif sub_op == "4":
+            cursor.execute("SELECT gtin, nombre_producto, descripcion_producto, precio_compra FROM producto")
+            filas = cursor.fetchall()
+            print("\n--- PRODUCTOS ---")
+            for f in filas:
+                print(f"GTIN: {f[0]} | Nombre: {f[1]} | Precio: ${f[3]} | Desc: {f[2]}")
+
+        elif sub_op == "5":
+            cursor.execute("SELECT id_almacen, nombre, fk_direccion FROM almacen")
+            filas = cursor.fetchall()
+            print("\n--- ALMACENES ---")
+            for f in filas:
+                print(f"ID: {f[0]} | Nombre: {f[1]} | ID Dirección: {f[2]}")
+
+        elif sub_op == "6":
+            query = """
+                SELECT a.nombre, p.nombre_producto, pa.stock 
+                FROM producto_almacen pa
+                JOIN almacen a ON pa.fk_id_almacen = a.id_almacen
+                JOIN producto p ON pa.fk_gtin = p.gtin
+            """
+            cursor.execute(query)
+            filas = cursor.fetchall()
+            print("\n--- STOCK EN ALMACENES (RELACIÓN N:M) ---")
+            for f in filas:
+                print(f"Almacén: {f[0]} | Producto: {f[1]} | Stock: {f[2]}")
+
+        elif sub_op == "7":
+            query = """
+                SELECT pr.nombre, p.nombre_producto 
+                FROM proveedores_producto pp
+                JOIN proveedor pr ON pp.fk_id_proveedor = pr.rut
+                JOIN producto p ON pp.fk_gtin = p.gtin
+            """
+            cursor.execute(query)
+            filas = cursor.fetchall()
+            print("\n--- PROVEEDORES POR PRODUCTO (RELACIÓN N:M) ---")
+            for f in filas:
+                print(f"Proveedor: {f[0]} ---> Producto Suministrado: {f[1]}")
+
+        elif sub_op == "8":
+            break
+        else:
+            print("❌ Opción inválida.")
+
+    cursor.close()
+
+
 def mostrar_menu():
     print("\n" + "=" * 50)
     print("      SISTEMA DE GESTIÓN DE INVENTARIO Y BODEGA")
@@ -14,7 +101,8 @@ def mostrar_menu():
     print("6. Asociar Proveedor a Producto (entregar_producto)")
     print("7. Asociar Producto a Almacén (registrar_producto)")
     print("8. Gestionar Inventario (Sumar / Restar / Consultar Stock)")
-    print("9. Salir")
+    print("9. 🔍 CONSULTAR TODO EN LA BASE DE DATOS (SELECT)")
+    print("10. Salir")
     print("=" * 50)
 
 
@@ -24,16 +112,15 @@ def ejecutar_menu():
         print("Error: No se pudo conectar a la base de datos.")
         return
 
-    # Estructura en memoria para vincular los objetos durante la sesión
-    direcciones = {}   # {id_direccion: Objeto Direccion}
-    categorias = {}    # {id_categoria: Objeto Categoria}
-    proveedores = {}   # {rut: Objeto Proveedor}
-    productos = {}     # {gtin: Objeto Producto}
-    almacenes = {}     # {id_almacen: Objeto Almacen}
+    direcciones = {}
+    categorias = {}
+    proveedores = {}
+    productos = {}
+    almacenes = {}
 
     while True:
         mostrar_menu()
-        opcion = input("Selecciona una opción (1-9): ")
+        opcion = input("Selecciona una opción (1-10): ")
 
         if opcion == "1":
             print("\n--- 1. REGISTRAR DIRECCIÓN ---")
@@ -181,6 +268,9 @@ def ejecutar_menu():
                 print("❌ ID de Almacén no existe.")
 
         elif opcion == "9":
+            consultar_datos_bd(conexion)
+
+        elif opcion == "10":
             conexion.close()
             print("\n👋 Conexión cerrada. ¡Hasta luego!")
             break
