@@ -5,9 +5,9 @@ def obtener_conexion():
     try:
         conexion = mysql.connector.connect(
             host="localhost",
-            user="pime",             
-            password="pime",   
-            database="pime"  
+            user="tuusuario",             
+            password="tucontraseña",   
+            database="pyme"  
         )
         if conexion.is_connected():
             return conexion
